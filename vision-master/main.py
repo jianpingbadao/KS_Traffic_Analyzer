@@ -3,38 +3,47 @@ import numpy as np
 import vehicles
 import time
 
+file_name = input("What is the name of the file? ")
+result_name = input("What would you like to name the results? ") + ".txt"
 #cnt_up is how many cars are going up relative to the highway
 #cnt_down is how many cars are going down relative to the highway
-cnt_up=0
-cnt_down=0
+cnt_up = 0
+cnt_down = 0
 
 #cap is a variable set to capture whatever video file you set it to(can also be used to capture video from webcam)
-#cap=cv2.VideoCapture("surveillance.m4v")
-cap=cv2.VideoCapture("Freewa.mp4")
+cap=cv2.VideoCapture(file_name)
+#cap = cv2.VideoCapture("Freewa.mp4")
 #Get width and height of video
 
-w=cap.get(3)
-h=cap.get(4)
-frameArea=h*w
-areaTH=frameArea/400
+w = cap.get(3)
+h = cap.get(4)
+frameArea = h*w
+areaTH = frameArea/400
 
 #Lines
 #Create Lines for video 
-line_up=int(3.25*(h/5))
-#line_down=int(3*(h/5))
-line_down=int(3*(h/5))
+if file_name == "test.mov":
+    line_up = int(2.5*(h/5))
+    line_down = int(4*(h/5))
+elif file_name == "test2.mov":
+    line_up = int(2.5*(h/5))
+    line_down = int(4*(h/5))
+elif file_name == "test3.mov":
+    line_up = int(2.5*(h/5))
+    line_down = int(4*(h/5))
+else:
+    line_up=int(3.25*(h/5))
+    line_down=int(3*(h/5))
 
-#up_limit=int(1*(h/5))
-#down_limit=int(4*(h/5))
-up_limit=int(2*(h/5))
-down_limit=int(4.5*(h/5))
+up_limit = int(2*(h/5))
+down_limit = int(4.5*(h/5))
 
 print("Red line y:",str(line_down))
 print("Blue line y:",str(line_up))
 #Sets line_down_color to red
-line_down_color=(255,0,0)
+line_down_color = (255,0,0)
 #Sets line_up_color to purple
-line_up_color=(255,0,255)
+line_up_color = (255,0,255)
 
 pt1 =  [0, line_down]
 pt2 =  [w, line_down]
@@ -55,7 +64,7 @@ pts_L4 = np.array([pt7,pt8], np.int32)
 pts_L4 = pts_L4.reshape((-1,1,2))
 
 #Background Subtractor (contains binary image of moving objects)
-fgbg=cv2.createBackgroundSubtractorMOG2(detectShadows=True)
+fgbg = cv2.createBackgroundSubtractorMOG2(detectShadows=True)
 
 #Kernals
 kernalOp = np.ones((3,3),np.uint8)
@@ -72,42 +81,43 @@ speed_down = 0.0
 distance = .3
 t2 = 0
 t1 = 0
+contents = []
 
 while(cap.isOpened()):
-    ret,frame=cap.read()
+    ret,frame = cap.read()
     for i in cars:
         i.age_one()
-    fgmask=fgbg.apply(frame)
-    fgmask2=fgbg.apply(frame)
+    fgmask = fgbg.apply(frame)
+    fgmask2 = fgbg.apply(frame)
 
-    if ret==True:
+    if ret == True:
 
         #Binarization
-        ret,imBin=cv2.threshold(fgmask,200,255,cv2.THRESH_BINARY)
-        ret,imBin2=cv2.threshold(fgmask2,200,255,cv2.THRESH_BINARY)
+        ret,imBin = cv2.threshold(fgmask,200,255,cv2.THRESH_BINARY)
+        ret,imBin2 = cv2.threshold(fgmask2,200,255,cv2.THRESH_BINARY)
         #Opening i.e First Erode the dilate
-        mask=cv2.morphologyEx(imBin,cv2.MORPH_OPEN,kernalOp)
-        mask2=cv2.morphologyEx(imBin2,cv2.MORPH_CLOSE,kernalOp)
+        mask = cv2.morphologyEx(imBin,cv2.MORPH_OPEN,kernalOp)
+        mask2 = cv2.morphologyEx(imBin2,cv2.MORPH_CLOSE,kernalOp)
 
         #Closing i.e First Dilate then Erode
-        mask=cv2.morphologyEx(mask,cv2.MORPH_CLOSE,kernalCl)
-        mask2=cv2.morphologyEx(mask2,cv2.MORPH_CLOSE,kernalCl)
+        mask = cv2.morphologyEx(mask,cv2.MORPH_CLOSE,kernalCl)
+        mask2 = cv2.morphologyEx(mask2,cv2.MORPH_CLOSE,kernalCl)
 
 
         #Find Contours
         #Creates rectangles around each vehicle
-        countours0,hierarchy=cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+        countours0,hierarchy = cv2.findContours(mask,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
         for cnt in countours0:
-            area=cv2.contourArea(cnt)
+            area = cv2.contourArea(cnt)
             print(area)
             if area>areaTH:
                 ####Tracking######
-                m=cv2.moments(cnt)
-                cx=int(m['m10']/m['m00'])
-                cy=int(m['m01']/m['m00'])
-                x,y,w,h=cv2.boundingRect(cnt)
+                m = cv2.moments(cnt)
+                cx = int(m['m10']/m['m00'])
+                cy = int(m['m01']/m['m00'])
+                x,y,w,h = cv2.boundingRect(cnt)
 
-                new=True
+                new = True
                 #detect cars in between up_limit down_limit
                 if cy in range(up_limit,down_limit):
                     for i in cars:
@@ -115,42 +125,46 @@ while(cap.isOpened()):
                             new = False
                             i.updateCoords(cx, cy)
 
-                            if i.going_UP(line_down,line_up)==True:
-                                cnt_up+=1
-                                print("ID:",i.getId(),'crossed going up at', time.strftime("%c"))
+                            if i.going_UP(line_down,line_up) == True:
+                                cnt_up += 1
+                                content = "ID: " + str(i.getId()) + ' crossed going up at ' + time.strftime("%c")
+                                contents.append(content)
+                                print(content)
                                 t1 = time.time()
                                 if(distance / abs(t1-t2)*10 < 80):
                                     speed_up = distance / abs(t1-t2)*10
                                 
-                            elif i.going_DOWN(line_down,line_up)==True:
-                                cnt_down+=1
-                                print("ID:", i.getId(), 'crossed going up at', time.strftime("%c"))
+                            elif i.going_DOWN(line_down,line_up) == True:
+                                cnt_down += 1
+                                content = "ID: " + str(i.getId()) + ' crossed going down at ' + time.strftime("%c")
+                                contents.append(content)
+                                print(content)
                                 t1 = time.time()
                                 if(distance / abs(t1-t2)*10 < 80):
                                     speed_down = distance / abs(t1-t2)*10
                                 
                             break
-                        if i.getState()=='1':
-                            if i.getDir()=='down'and i.getY()>down_limit:
+                        if i.getState() == '1':
+                            if i.getDir() == 'down' and i.getY() > down_limit:
                                 i.setDone()
-                            elif i.getDir()=='up'and i.getY()<up_limit:
+                            elif i.getDir() == 'up' and i.getY() < up_limit:
                                 i.setDone()
                         if i.timedOut():
-                            index=cars.index(i)
+                            index = cars.index(i)
                             cars.pop(index)
                             del i
                             
                             
 
-                    if new==True: #If nothing is detected,create new
-                        p=vehicles.Car(pid,cx,cy,max_p_age)
+                    if new == True: #If nothing is detected,create new
+                        p = vehicles.Car(pid,cx,cy,max_p_age)
                         cars.append(p)
-                        pid+=1
+                        pid += 1
                         t2 = time.time()
 
 
                 cv2.circle(frame,(cx,cy),5,(0,0,255),-1)
-                img=cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
+                img = cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
 
         for i in cars:
             cv2.putText(frame, str(i.getId()), (i.getX(), i.getY()), font, 0.3, i.getRGB(), 1, cv2.LINE_AA)
@@ -158,12 +172,12 @@ while(cap.isOpened()):
 
 
         
-        str_up='UP: '+str(cnt_up)
-        str_down='DOWN: '+str(cnt_down)
-        frame=cv2.polylines(frame,[pts_L1],False,line_down_color,thickness=2)
-        frame=cv2.polylines(frame,[pts_L2],False,line_up_color,thickness=2)
-        frame=cv2.polylines(frame,[pts_L3],False,(255,255,255),thickness=1)
-        frame=cv2.polylines(frame,[pts_L4],False,(255,255,255),thickness=1)
+        str_up = 'UP: '+str(cnt_up)
+        str_down = 'DOWN: '+str(cnt_down)
+        frame = cv2.polylines(frame,[pts_L1],False,line_down_color,thickness=2)
+        frame = cv2.polylines(frame,[pts_L2],False,line_up_color,thickness=2)
+        frame = cv2.polylines(frame,[pts_L3],False,(255,255,255),thickness=1)
+        frame = cv2.polylines(frame,[pts_L4],False,(255,255,255),thickness=1)
         cv2.putText(frame, str_up, (10, 40), font, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
         cv2.putText(frame, str_up, (10, 40), font, 0.5, (0, 0, 255), 1, cv2.LINE_AA)
         cv2.putText(frame, str_down, (10, 90), font, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
@@ -174,11 +188,16 @@ while(cap.isOpened()):
         cv2.putText(frame, 'SPEED_DOWN: ' + str(speed_down), (100 , 90), font, 0.5, (255,0,0), 1, cv2.LINE_AA)
         cv2.imshow('Frame',frame)
 
-        if cv2.waitKey(1)&0xff==ord('q'):
+        if cv2.waitKey(1)&0xff == ord('q'):
             break
 
     else:
         break
+with open(result_name, 'w') as f:
+        for item in contents:
+            f.write(item+'\n') 
+        f.write("Count going up: " + str_up + "\n")
+        f.write("Count going down: " + str_down + "\n")
 
 cap.release()
 cv2.destroyAllWindows()
